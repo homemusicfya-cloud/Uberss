@@ -1,1786 +1,387 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
+  <title>Calculadora de Viajes - Matiz</title>
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-
-<title>Matiz Driver - Calculadora</title>
-
-<style>
-
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #08080d;
-    color: white;
-}
-
-.container {
-    width: 100%;
-    max-width: 700px;
-    margin: auto;
-    padding: 18px;
-}
-
-h1 {
-    text-align: center;
-    margin-bottom: 5px;
-}
-
-.subtitle {
-    text-align: center;
-    color: #999;
-    margin-bottom: 25px;
-}
-
-.card {
-    background: #14141d;
-    border: 1px solid #292936;
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 18px;
-}
-
-h2 {
-    margin-top: 0;
-}
-
-label {
-    display: block;
-    margin-top: 14px;
-    margin-bottom: 6px;
-    font-weight: bold;
-}
-
-input,
-select {
-    width: 100%;
-    padding: 13px;
-    background: #0b0b12;
-    border: 1px solid #383847;
-    border-radius: 9px;
-    color: white;
-    font-size: 16px;
-}
-
-button {
-    width: 100%;
-    border: 0;
-    border-radius: 10px;
-    padding: 14px;
-    margin-top: 15px;
-    background: #635bff;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-button:hover {
-    opacity: .9;
-}
-
-.secondary {
-    background: #292936;
-}
-
-.greenButton {
-    background: #087a42;
-}
-
-.redButton {
-    background: #8b2222;
-}
-
-.info {
-    color: #999;
-    font-size: 13px;
-    line-height: 1.5;
-    margin-top: 9px;
-}
-
-.warning {
-    background: #30270c;
-    color: #ffe27a;
-    border-radius: 10px;
-    padding: 12px;
-    margin-top: 12px;
-    font-size: 14px;
-}
-
-.result-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.result-box {
-    background: #0c0c13;
-    border: 1px solid #292936;
-    border-radius: 10px;
-    padding: 14px;
-    text-align: center;
-}
-
-.result-box span {
-    display: block;
-    color: #999;
-    font-size: 12px;
-    margin-bottom: 5px;
-}
-
-.result-box strong {
-    font-size: 19px;
-}
-
-.decision {
-    padding: 18px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-}
-
-.accept {
-    background: #103c28;
-    color: #52e49a;
-}
-
-.maybe {
-    background: #493e0d;
-    color: #ffe46d;
-}
-
-.reject {
-    background: #491515;
-    color: #ff7777;
-}
-
-.platform {
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.trip {
-    background: #0d0d14;
-    border: 1px solid #292936;
-    border-radius: 10px;
-    padding: 14px;
-    margin-top: 10px;
-}
-
-.trip-title {
-    font-weight: bold;
-    font-size: 17px;
-}
-
-.trip-info {
-    color: #aaa;
-    font-size: 13px;
-    line-height: 1.6;
-    margin-top: 7px;
-}
-
-.hidden {
-    display: none;
-}
-
-.tariff-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 7px;
-    margin-top: 8px;
-}
-
-.tariff-row input {
-    font-size: 14px;
-    padding: 10px;
-}
-
-.tariff-name {
-    font-weight: bold;
-    padding-top: 10px;
-}
-
-.small {
-    font-size: 12px;
-    color: #888;
-}
-
-@media(max-width:500px) {
-
-    .container {
-        padding: 10px;
-    }
-
-    .result-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-}
-
-</style>
-
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 
 <body>
 
-<div class="container">
+<header class="top">
+  <div>
+    <h1>🚗 Matiz Trip Calculator</h1>
+    <p>Calcula si un viaje realmente conviene</p>
+  </div>
 
-<h1>🚗 Matiz Driver</h1>
+  <button id="themeBtn" class="iconBtn">☀️</button>
+</header>
 
-<div class="subtitle">
-Calculadora de rentabilidad para pasajeros y reparto
-</div>
 
+<main>
 
-<!-- VEHICULO -->
+  <!-- VEHÍCULO -->
 
-<div class="card">
+  <section class="card">
 
-<h2>🚗 Mi vehículo</h2>
+    <h2>🚗 Mi vehículo</h2>
 
-<label>Consumo del Matiz (km/L)</label>
+    <div class="grid">
 
-<input
-    id="consumo"
-    type="number"
-    value="15"
-    step="0.1"
->
+      <label>
+        Rendimiento
+        <div class="inputUnit">
+          <input id="kmL" type="number" value="15" step="0.1">
+          <span>km/L</span>
+        </div>
+      </label>
 
+      <label>
+        Gasolina
+        <div class="inputUnit">
+          <input id="gasPrice" type="number" value="24" step="0.01">
+          <span>$/L</span>
+        </div>
+      </label>
 
-<label>Gasolina ($/L)</label>
+      <label>
+        Desgaste / mantenimiento
+        <div class="inputUnit">
+          <input id="wearKm" type="number" value="1.50" step="0.10">
+          <span>$/km</span>
+        </div>
+      </label>
 
-<input
-    id="gasolina"
-    type="number"
-    value="24"
-    step="0.01"
->
+      <label>
+        Ganancia objetivo
+        <div class="inputUnit">
+          <input id="targetHour" type="number" value="100" step="10">
+          <span>$/hora</span>
+        </div>
+      </label>
 
+    </div>
 
-<label>Desgaste y mantenimiento ($/km)</label>
+  </section>
 
-<input
-    id="desgaste"
-    type="number"
-    value="1.50"
-    step="0.10"
->
 
+  <!-- PLATAFORMA -->
 
-<label>Ganancia mínima deseada ($/hora)</label>
+  <section class="card">
 
-<input
-    id="objetivo"
-    type="number"
-    value="100"
-    step="10"
->
+    <h2>📱 Plataforma</h2>
 
+    <select id="platform">
 
-</div>
+      <option value="uberx">
+        UberX
+      </option>
 
+      <option value="indrive">
+        inDrive
+      </option>
 
-<!-- TARIFAS -->
+      <option value="didi">
+        DiDi Pasajeros
+      </option>
+
+      <option value="ubereats">
+        Uber Eats
+      </option>
 
-<div class="card">
+      <option value="uberpackage">
+        Uber Paquetería
+      </option>
 
-<h2>💰 Tarifas estimadas</h2>
+      <option value="didifood">
+        DiDi Food
+      </option>
 
-<div class="info">
+      <option value="rappi">
+        Rappi
+      </option>
 
-Estas tarifas son configurables. No representan tarifas oficiales
-en tiempo real de las plataformas.
+    </select>
+
+    <div class="info">
+      La tarifa mostrada es una <b>estimación configurable</b>.
+      La oferta real de la aplicación siempre tiene prioridad.
+    </div>
+
+  </section>
+
+
+  <!-- RUTA -->
+
+  <section class="card">
+
+    <h2>📍 Ruta</h2>
+
+    <label>
+      Enlace de Google Maps
+      <input
+        id="mapsUrl"
+        type="text"
+        placeholder="Pega aquí tu enlace de Google Maps"
+      >
+    </label>
 
-</div>
+    <button id="processMaps" class="primary">
+      🗺️ Procesar ruta
+    </button>
+
+    <div class="separator">
+      <span>o introduce las coordenadas</span>
+    </div>
+
+    <div class="grid">
+
+      <label>
+        Origen
+        <input
+          id="origin"
+          type="text"
+          placeholder="22.156,-100.985"
+        >
+      </label>
+
+      <label>
+        Destino
+        <input
+          id="destination"
+          type="text"
+          placeholder="22.180,-100.970"
+        >
+      </label>
 
+    </div>
 
-<div class="tariff-row">
 
-<div class="tariff-name">UberX</div>
+    <div class="grid">
 
-<input
-    id="uberxBase"
-    type="number"
-    value="25"
-    placeholder="Base"
->
+      <label>
+        Kilómetros
+        <div class="inputUnit">
+          <input
+            id="km"
+            type="number"
+            step="0.1"
+            placeholder="0"
+          >
+          <span>km</span>
+        </div>
+      </label>
 
-<input
-    id="uberxKm"
-    type="number"
-    value="6"
-    placeholder="$/km"
->
+      <label>
+        Tiempo
+        <div class="inputUnit">
+          <input
+            id="minutes"
+            type="number"
+            step="1"
+            placeholder="0"
+          >
+          <span>min</span>
+        </div>
+      </label>
 
-</div>
+    </div>
+
 
+    <div class="grid">
+
+      <label>
+        Km adicionales
+        <div class="inputUnit">
+          <input id="extraKm" type="number" value="0" step="0.1">
+          <span>km</span>
+        </div>
+      </label>
+
+      <label>
+        Minutos adicionales
+        <div class="inputUnit">
+          <input id="extraMinutes" type="number" value="0" step="1">
+          <span>min</span>
+        </div>
+      </label>
+
+    </div>
+
+
+    <button id="routeButton" class="secondary">
+      🚦 Calcular ruta automáticamente
+    </button>
 
-<div class="tariff-row">
+    <div id="routeStatus" class="status"></div>
 
-<div class="tariff-name">inDrive</div>
+  </section>
 
-<input
-    id="indriveBase"
-    type="number"
-    value="30"
-    placeholder="Base"
->
 
-<input
-    id="indriveKm"
-    type="number"
-    value="6"
-    placeholder="$/km"
->
+  <!-- OFERTA -->
 
-</div>
+  <section class="card">
 
+    <h2>💰 Oferta</h2>
 
-<div class="tariff-row">
+    <label>
+      Oferta real de la aplicación
+      <div class="inputUnit big">
+        <span>$</span>
+        <input
+          id="realOffer"
+          type="number"
+          placeholder="Ej. 85"
+          step="0.01"
+        >
+        <span>MXN</span>
+      </div>
+    </label>
 
-<div class="tariff-name">DiDi</div>
+    <p class="muted">
+      Si dejas este campo vacío, se utilizará la tarifa estimada.
+    </p>
 
-<input
-    id="didiBase"
-    type="number"
-    value="25"
-    placeholder="Base"
->
+  </section>
 
-<input
-    id="didiKm"
-    type="number"
-    value="6"
-    placeholder="$/km"
->
 
-</div>
+  <!-- RESULTADOS -->
 
+  <section class="card results">
 
-<div class="tariff-row">
+    <h2>📊 Resultado</h2>
 
-<div class="tariff-name">Uber Eats</div>
+    <div class="decision" id="decision">
+      Esperando datos...
+    </div>
 
-<input
-    id="eatsBase"
-    type="number"
-    value="20"
-    placeholder="Base"
->
+    <div class="resultGrid">
 
-<input
-    id="eatsKm"
-    type="number"
-    value="5"
-    placeholder="$/km"
->
+      <div>
+        <small>Km totales</small>
+        <strong id="rKm">0 km</strong>
+      </div>
 
-</div>
+      <div>
+        <small>Tiempo total</small>
+        <strong id="rTime">0 min</strong>
+      </div>
 
+      <div>
+        <small>Pago estimado</small>
+        <strong id="rEstimated">$0</strong>
+      </div>
 
-<div class="tariff-row">
+      <div>
+        <small>Pago utilizado</small>
+        <strong id="rPayment">$0</strong>
+      </div>
 
-<div class="tariff-name">Uber Paquetería</div>
+      <div>
+        <small>Gasolina</small>
+        <strong id="rFuel">$0</strong>
+      </div>
 
-<input
-    id="packageBase"
-    type="number"
-    value="25"
-    placeholder="Base"
->
+      <div>
+        <small>Desgaste</small>
+        <strong id="rWear">$0</strong>
+      </div>
 
-<input
-    id="packageKm"
-    type="number"
-    value="5"
-    placeholder="$/km"
->
+      <div>
+        <small>Costo total</small>
+        <strong id="rCost">$0</strong>
+      </div>
 
-</div>
+      <div>
+        <small>Ganancia neta</small>
+        <strong id="rNet">$0</strong>
+      </div>
 
+      <div>
+        <small>Neto por km</small>
+        <strong id="rKmProfit">$0</strong>
+      </div>
 
-<div class="tariff-row">
+      <div>
+        <small>Neto por hora</small>
+        <strong id="rHourProfit">$0</strong>
+      </div>
 
-<div class="tariff-name">DiDi Food</div>
+    </div>
 
-<input
-    id="didiFoodBase"
-    type="number"
-    value="20"
-    placeholder="Base"
->
 
-<input
-    id="didiFoodKm"
-    type="number"
-    value="5"
-    placeholder="$/km"
->
+    <div class="minimum">
 
-</div>
+      <span>
+        Pago mínimo para alcanzar tu objetivo:
+      </span>
 
+      <strong id="rMinimum">
+        $0
+      </strong>
 
-<div class="tariff-row">
+    </div>
 
-<div class="tariff-name">Rappi</div>
 
-<input
-    id="rappiBase"
-    type="number"
-    value="20"
-    placeholder="Base"
->
+    <button id="calculate" class="primary large">
+      🧮 CALCULAR VIAJE
+    </button>
 
-<input
-    id="rappiKm"
-    type="number"
-    value="5"
-    placeholder="$/km"
->
+    <button id="openMaps" class="mapsBtn">
+      📍 Abrir ruta en Google Maps
+    </button>
 
-</div>
+    <button id="saveTrip" class="secondary">
+      💾 Guardar viaje
+    </button>
 
-</div>
+  </section>
 
 
-<!-- RUTA -->
+  <!-- HISTORIAL -->
 
-<div class="card">
+  <section class="card">
 
-<h2>🗺️ Ruta</h2>
+    <div class="historyHeader">
 
-<label>🔗 Pega tu enlace de Google Maps</label>
+      <h2>📋 Historial</h2>
 
-<input
-    id="mapsLink"
-    type="url"
-    placeholder="https://maps.app.goo.gl/..."
->
+      <button id="clearHistory" class="danger">
+        Borrar
+      </button>
 
-<div class="info">
+    </div>
 
-Puedes pegar un enlace de Google Maps.
-Si el enlace es compatible, el programa intentará detectar
-las coordenadas.
+    <div id="history"></div>
 
-</div>
+  </section>
 
 
-<button
-    class="secondary"
-    onclick="procesarMaps()">
+  <section class="card">
 
-🔎 PROCESAR ENLACE
+    <h2>⚙️ Tarifas estimadas</h2>
 
-</button>
+    <p class="muted">
+      Estas tarifas son solamente parámetros de cálculo.
+      Cámbialas según las tarifas/ofertas que observes en tu zona.
+    </p>
 
+    <div id="tariffs"></div>
 
-<label>📍 Origen</label>
+  </section>
 
-<input
-    id="origen"
-    type="text"
-    placeholder="Ej. Saucito, San Luis Potosí"
->
+</main>
 
 
-<label>📍 Destino</label>
+<footer>
+  Matiz Trip Calculator · GitHub Pages
+</footer>
 
-<input
-    id="destino"
-    type="text"
-    placeholder="Ej. Plaza Sendero"
->
 
-
-<button
-    class="secondary"
-    onclick="abrirMaps()">
-
-🌎 ABRIR RUTA EN GOOGLE MAPS
-
-</button>
-
-
-<label>📏 Kilómetros</label>
-
-<input
-    id="km"
-    type="number"
-    placeholder="Ej. 8.5"
-    step="0.1"
->
-
-
-<label>⏱️ Tiempo (minutos)</label>
-
-<input
-    id="minutos"
-    type="number"
-    placeholder="Ej. 22"
->
-
-
-<label>📏 Regreso / recorrido adicional (km)</label>
-
-<input
-    id="regreso"
-    type="number"
-    value="0"
-    step="0.1"
->
-
-
-<label>⏱️ Tiempo adicional (minutos)</label>
-
-<input
-    id="regresoMin"
-    type="number"
-    value="0"
->
-
-
-</div>
-
-
-<!-- VIAJE -->
-
-<div class="card">
-
-<h2>🚘 Viaje</h2>
-
-
-<label>Plataforma</label>
-
-<select id="plataforma">
-
-<optgroup label="🚗 Pasajeros">
-
-<option value="UberX">
-UberX
-</option>
-
-<option value="inDrive">
-inDrive
-</option>
-
-<option value="DiDi Pasajeros">
-DiDi Pasajeros
-</option>
-
-</optgroup>
-
-
-<optgroup label="📦 Reparto">
-
-<option value="Uber Eats">
-Uber Eats
-</option>
-
-<option value="Uber Paquetería">
-Uber Paquetería
-</option>
-
-<option value="DiDi Food">
-DiDi Food
-</option>
-
-<option value="Rappi">
-Rappi
-</option>
-
-</optgroup>
-
-
-</select>
-
-
-<label>Tipo</label>
-
-<select id="tipo">
-
-<option value="pasajero">
-🚗 Pasajero
-</option>
-
-<option value="entrega">
-📦 Entrega
-</option>
-
-</select>
-
-
-<label>
-💵 Oferta real de la aplicación (opcional)
-</label>
-
-<input
-    id="ofertaReal"
-    type="number"
-    placeholder="Ej. 87"
-    step="0.01"
->
-
-
-<div class="info">
-
-Si escribes una oferta real, el programa utilizará esa cantidad
-en lugar de la tarifa estimada.
-
-</div>
-
-
-<button onclick="calcular()">
-
-🧮 CALCULAR RENTABILIDAD
-
-</button>
-
-</div>
-
-
-<!-- RESULTADO -->
-
-<div class="card">
-
-<h2>📊 Resultado</h2>
-
-<div id="resultado">
-
-<div class="info">
-Introduce la ruta y pulsa calcular.
-</div>
-
-</div>
-
-</div>
-
-
-<!-- HISTORIAL -->
-
-<div class="card">
-
-<h2>📚 Historial</h2>
-
-<div id="historial"></div>
-
-<button
-    class="redButton"
-    onclick="borrarHistorial()">
-
-🗑️ BORRAR HISTORIAL
-
-</button>
-
-</div>
-
-
-</div>
-
-
-<script>
-
-
-// ==========================================
-// HISTORIAL
-// ==========================================
-
-let viajes =
-JSON.parse(
-localStorage.getItem("matizViajes")
-) || [];
-
-
-// ==========================================
-// OBTENER TARIFA
-// ==========================================
-
-function obtenerTarifa(plataforma, km, minutos) {
-
-let base = 0;
-let porKm = 0;
-let porMin = 0;
-
-
-// UberX
-
-if (plataforma === "UberX") {
-
-base =
-parseFloat(
-document.getElementById("uberxBase").value
-) || 0;
-
-porKm =
-parseFloat(
-document.getElementById("uberxKm").value
-) || 0;
-
-}
-
-
-// inDrive
-
-else if (plataforma === "inDrive") {
-
-base =
-parseFloat(
-document.getElementById("indriveBase").value
-) || 0;
-
-porKm =
-parseFloat(
-document.getElementById("indriveKm").value
-) || 0;
-
-}
-
-
-// DiDi
-
-else if (plataforma === "DiDi Pasajeros") {
-
-base =
-parseFloat(
-document.getElementById("didiBase").value
-) || 0;
-
-porKm =
-parseFloat(
-document.getElementById("didiKm").value
-) || 0;
-
-}
-
-
-// Uber Eats
-
-else if (plataforma === "Uber Eats") {
-
-base =
-parseFloat(
-document.getElementById("eatsBase").value
-) || 0;
-
-porKm =
-parseFloat(
-document.getElementById("eatsKm").value
-) || 0;
-
-}
-
-
-// Paquetería
-
-else if (plataforma === "Uber Paquetería") {
-
-base =
-parseFloat(
-document.getElementById("packageBase").value
-) || 0;
-
-porKm =
-parseFloat(
-document.getElementById("packageKm").value
-) || 0;
-
-}
-
-
-// DiDi Food
-
-else if (plataforma === "DiDi Food") {
-
-base =
-parseFloat(
-document.getElementById("didiFoodBase").value
-) || 0;
-
-porKm =
-parseFloat(
-document.getElementById("didiFoodKm").value
-) || 0;
-
-}
-
-
-// Rappi
-
-else if (plataforma === "Rappi") {
-
-base =
-parseFloat(
-document.getElementById("rappiBase").value
-) || 0;
-
-porKm =
-parseFloat(
-document.getElementById("rappiKm").value
-) || 0;
-
-}
-
-
-// Fórmula
-
-let tarifa =
-base +
-(km * porKm);
-
-
-// Pequeño componente por tiempo
-
-porMin = 0.50;
-
-tarifa +=
-minutos * porMin;
-
-
-return tarifa;
-
-}
-
-
-// ==========================================
-// PROCESAR GOOGLE MAPS
-// ==========================================
-
-function procesarMaps() {
-
-const link =
-document.getElementById("mapsLink").value.trim();
-
-
-if (!link) {
-
-alert("Pega primero un enlace de Google Maps.");
-
-return;
-
-}
-
-
-// Intentar encontrar coordenadas
-
-const coordenadas =
-link.match(
-/(-?\d+\.\d+),(-?\d+\.\d+)/g
-);
-
-
-if (!coordenadas ||
-coordenadas.length < 2) {
-
-alert(
-"No pude extraer automáticamente las coordenadas de este enlace corto.\n\n" +
-"Abre Google Maps y copia el enlace completo de la ruta, " +
-"o introduce manualmente los kilómetros y minutos."
-);
-
-return;
-
-}
-
-
-// Primera coordenada
-
-const inicio =
-coordenadas[0];
-
-
-// Última coordenada
-
-const destino =
-coordenadas[coordenadas.length - 1];
-
-
-document.getElementById("origen").value =
-inicio;
-
-document.getElementById("destino").value =
-destino;
-
-
-alert(
-"Se detectaron puntos de la ruta.\n\n" +
-"Ahora introduce los kilómetros y minutos que muestra Google Maps."
-);
-
-}
-
-
-// ==========================================
-// ABRIR GOOGLE MAPS
-// ==========================================
-
-function abrirMaps() {
-
-const origen =
-document.getElementById("origen").value.trim();
-
-const destino =
-document.getElementById("destino").value.trim();
-
-
-if (!origen || !destino) {
-
-alert(
-"Escribe primero origen y destino."
-);
-
-return;
-
-}
-
-
-const url =
-"https://www.google.com/maps/dir/?api=1" +
-"&origin=" +
-encodeURIComponent(origen) +
-"&destination=" +
-encodeURIComponent(destino) +
-"&travelmode=driving";
-
-
-window.open(
-url,
-"_blank"
-);
-
-}
-
-
-// ==========================================
-// CALCULAR
-// ==========================================
-
-function calcular() {
-
-
-const plataforma =
-document.getElementById("plataforma").value;
-
-
-const tipo =
-document.getElementById("tipo").value;
-
-
-const km =
-parseFloat(
-document.getElementById("km").value
-);
-
-
-const minutos =
-parseFloat(
-document.getElementById("minutos").value
-);
-
-
-const regreso =
-parseFloat(
-document.getElementById("regreso").value
-) || 0;
-
-
-const regresoMin =
-parseFloat(
-document.getElementById("regresoMin").value
-) || 0;
-
-
-const ofertaReal =
-parseFloat(
-document.getElementById("ofertaReal").value
-);
-
-
-const consumo =
-parseFloat(
-document.getElementById("consumo").value
-);
-
-
-const gasolina =
-parseFloat(
-document.getElementById("gasolina").value
-);
-
-
-const desgaste =
-parseFloat(
-document.getElementById("desgaste").value
-);
-
-
-const objetivo =
-parseFloat(
-document.getElementById("objetivo").value
-);
-
-
-if (
-isNaN(km) ||
-isNaN(minutos)
-) {
-
-alert(
-"Introduce kilómetros y minutos."
-);
-
-return;
-
-}
-
-
-if (
-km <= 0 ||
-minutos <= 0
-) {
-
-alert(
-"Los kilómetros y minutos deben ser mayores que cero."
-);
-
-return;
-
-}
-
-
-// ==========================================
-// TOTAL
-// ==========================================
-
-const kmTotal =
-km + regreso;
-
-
-const minutosTotal =
-minutos + regresoMin;
-
-
-// ==========================================
-// TARIFA ESTIMADA
-// ==========================================
-
-const tarifaEstimada =
-obtenerTarifa(
-plataforma,
-kmTotal,
-minutosTotal
-);
-
-
-// ==========================================
-// PRECIO FINAL
-// ==========================================
-
-let pago;
-
-let origenPago;
-
-
-if (!isNaN(ofertaReal) && ofertaReal > 0) {
-
-pago = ofertaReal;
-
-origenPago =
-"Oferta real de la aplicación";
-
-} else {
-
-pago = tarifaEstimada;
-
-origenPago =
-"Estimación configurada";
-
-}
-
-
-// ==========================================
-// COSTOS
-// ==========================================
-
-const litros =
-kmTotal / consumo;
-
-
-const costoGasolina =
-litros * gasolina;
-
-
-const costoDesgaste =
-kmTotal * desgaste;
-
-
-const costoTotal =
-costoGasolina +
-costoDesgaste;
-
-
-// ==========================================
-// GANANCIA
-// ==========================================
-
-const neto =
-pago -
-costoTotal;
-
-
-const horas =
-minutosTotal / 60;
-
-
-const porHora =
-neto / horas;
-
-
-const porKm =
-neto / kmTotal;
-
-
-// ==========================================
-// DECISIÓN
-// ==========================================
-
-let decision;
-let clase;
-
-
-if (porHora >= objetivo) {
-
-decision =
-"✅ ACEPTAR";
-
-clase =
-"accept";
-
-}
-
-else if (
-porHora >= objetivo * 0.67
-) {
-
-decision =
-"⚠️ DEPENDE";
-
-clase =
-"maybe";
-
-}
-
-else {
-
-decision =
-"❌ RECHAZAR";
-
-clase =
-"reject";
-
-}
-
-
-// ==========================================
-// RESULTADO
-// ==========================================
-
-document.getElementById("resultado").innerHTML = `
-
-<div class="${clase} decision">
-
-${decision}
-
-</div>
-
-
-<div class="platform">
-
-${plataforma}
-
-</div>
-
-
-<div class="warning">
-
-💰 ${origenPago}
-
-<br>
-
-Tarifa estimada:
-<strong>
-$${tarifaEstimada.toFixed(2)}
-</strong>
-
-<br>
-
-Pago utilizado:
-<strong>
-$${pago.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-grid">
-
-
-<div class="result-box">
-
-<span>
-💰 Pago
-</span>
-
-<strong>
-$${pago.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-💵 Ganancia neta
-</span>
-
-<strong>
-$${neto.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-⛽ Gasolina
-</span>
-
-<strong>
-$${costoGasolina.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-🔧 Desgaste
-</span>
-
-<strong>
-$${costoDesgaste.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-📏 Kilómetros
-</span>
-
-<strong>
-${kmTotal.toFixed(1)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-⏱️ Tiempo
-</span>
-
-<strong>
-${minutosTotal}
-min
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-💰 Ganancia/km
-</span>
-
-<strong>
-$${porKm.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-📈 Ganancia/hora
-</span>
-
-<strong>
-$${porHora.toFixed(2)}
-</strong>
-
-</div>
-
-
-</div>
-
-
-<div class="warning">
-
-Tu objetivo:
-<strong>
-$${objetivo.toFixed(2)}/hora
-</strong>
-
-<br><br>
-
-Resultado:
-<strong>
-$${porHora.toFixed(2)}/hora
-</strong>
-
-</div>
-
-
-<button
-    class="greenButton"
-    onclick="guardarViaje()">
-
-💾 GUARDAR VIAJE
-
-</button>
-
-`;
-
-
-// ==========================================
-// GUARDAR TEMPORAL
-// ==========================================
-
-window.ultimoViaje = {
-
-fecha:
-new Date().toLocaleString(),
-
-plataforma,
-
-tipo,
-
-pago,
-
-estimado:
-tarifaEstimada,
-
-km:
-kmTotal,
-
-minutos:
-minutosTotal,
-
-gasolina:
-costoGasolina,
-
-desgaste:
-costoDesgaste,
-
-neto,
-
-porHora,
-
-porKm,
-
-decision
-
-};
-
-}
-
-
-// ==========================================
-// GUARDAR
-// ==========================================
-
-function guardarViaje() {
-
-
-if (!window.ultimoViaje) {
-
-alert(
-"Primero calcula un viaje."
-);
-
-return;
-
-}
-
-
-viajes.unshift(
-window.ultimoViaje
-);
-
-
-localStorage.setItem(
-"matizViajes",
-JSON.stringify(viajes)
-);
-
-
-mostrarHistorial();
-
-
-alert(
-"Viaje guardado."
-);
-
-}
-
-
-// ==========================================
-// HISTORIAL
-// ==========================================
-
-function mostrarHistorial() {
-
-
-const historial =
-document.getElementById("historial");
-
-
-if (viajes.length === 0) {
-
-historial.innerHTML = `
-
-<div class="info">
-
-No hay viajes registrados.
-
-</div>
-
-`;
-
-return;
-
-}
-
-
-let ingresos = 0;
-let gasolina = 0;
-let desgaste = 0;
-let neto = 0;
-let km = 0;
-let minutos = 0;
-
-
-viajes.forEach(v => {
-
-ingresos += v.pago;
-
-gasolina += v.gasolina;
-
-desgaste += v.desgaste;
-
-neto += v.neto;
-
-km += v.km;
-
-minutos += v.minutos;
-
-});
-
-
-const horas =
-minutos / 60;
-
-
-const promedio =
-horas > 0
-? neto / horas
-: 0;
-
-
-historial.innerHTML = `
-
-<div class="result-grid">
-
-
-<div class="result-box">
-
-<span>
-🚗 Viajes
-</span>
-
-<strong>
-${viajes.length}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-💰 Ingresos
-</span>
-
-<strong>
-$${ingresos.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-⛽ Gasolina
-</span>
-
-<strong>
-$${gasolina.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-🔧 Desgaste
-</span>
-
-<strong>
-$${desgaste.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-💵 Neto
-</span>
-
-<strong>
-$${neto.toFixed(2)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-📏 Km
-</span>
-
-<strong>
-${km.toFixed(1)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-⏱️ Horas
-</span>
-
-<strong>
-${horas.toFixed(1)}
-</strong>
-
-</div>
-
-
-<div class="result-box">
-
-<span>
-📈 Promedio/hora
-</span>
-
-<strong>
-$${promedio.toFixed(2)}
-</strong>
-
-</div>
-
-
-</div>
-
-
-<h3>
-Últimos viajes
-</h3>
-
-
-${viajes.slice(0,20).map(v => `
-
-<div class="trip">
-
-<div class="trip-title">
-
-${v.decision}
-—
-${v.plataforma}
-
-</div>
-
-
-<div class="trip-info">
-
-${v.fecha}
-
-<br>
-
-💰 Pago:
-$${v.pago.toFixed(2)}
-
-<br>
-
-📏 ${v.km.toFixed(1)} km
-
-<br>
-
-⏱️ ${v.minutos} minutos
-
-<br>
-
-⛽ Gasolina:
-$${v.gasolina.toFixed(2)}
-
-<br>
-
-🔧 Desgaste:
-$${v.desgaste.toFixed(2)}
-
-<br>
-
-💵 Neto:
-$${v.neto.toFixed(2)}
-
-<br>
-
-📈 $${v.porHora.toFixed(2)}/hora
-
-<br>
-
-📏 $${v.porKm.toFixed(2)}/km
-
-</div>
-
-</div>
-
-`).join("")}
-
-`;
-
-}
-
-
-// ==========================================
-// BORRAR
-// ==========================================
-
-function borrarHistorial() {
-
-
-if (viajes.length === 0) {
-
-return;
-
-}
-
-
-if (
-!confirm(
-"¿Borrar todo el historial?"
-)
-) {
-
-return;
-
-}
-
-
-viajes = [];
-
-
-localStorage.removeItem(
-"matizViajes"
-);
-
-
-mostrarHistorial();
-
-}
-
-
-// ==========================================
-// CAMBIO AUTOMÁTICO DE TIPO
-// ==========================================
-
-document
-.getElementById("plataforma")
-.addEventListener(
-"change",
-function() {
-
-
-if (
-
-this.value === "UberX" ||
-
-this.value === "inDrive" ||
-
-this.value === "DiDi Pasajeros"
-
-) {
-
-document.getElementById("tipo").value =
-"pasajero";
-
-}
-
-else {
-
-document.getElementById("tipo").value =
-"entrega";
-
-}
-
-});
-
-
-// ==========================================
-// INICIO
-// ==========================================
-
-mostrarHistorial();
-
-</script>
+<script src="app.js"></script>
 
 </body>
-
 </html>
