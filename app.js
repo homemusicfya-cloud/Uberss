@@ -1,743 +1,1352 @@
-let configuracion = {
+/* =========================================================
+   MATIZ TRIP CALCULATOR
+   ========================================================= */
 
-  kmLitro: 14,
+const OSRM_URL =
+  "https://router.project-osrm.org/route/v1/driving";
 
-  precioGasolina: 24,
 
-  costoDesgaste: 1,
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
 
-  metaHora: 150,
+const defaultTariffs = {
 
-  apiKey: ""
+  uberx: {
+    name: "UberX",
+    base: 35,
+    km: 5.5,
+    minute: 0.50
+  },
+
+  indrive: {
+    name: "inDrive",
+    base: 30,
+    km: 5,
+    minute: 0.40
+  },
+
+  didi: {
+    name: "DiDi Pasajeros",
+    base: 30,
+    km: 5,
+    minute: 0.45
+  },
+
+  ubereats: {
+    name: "Uber Eats",
+    base: 30,
+    km: 5,
+    minute: 0.40
+  },
+
+  uberpackage: {
+    name: "Uber Paquetería",
+    base: 35,
+    km: 5.5,
+    minute: 0.45
+  },
+
+  didifood: {
+    name: "DiDi Food",
+    base: 30,
+    km: 5,
+    minute: 0.40
+  },
+
+  rappi: {
+    name: "Rappi",
+    base: 30,
+    km: 5,
+    minute: 0.40
+  }
 
 };
 
 
-let ultimoViaje = null;
+let tariffs =
+  JSON.parse(
+    localStorage.getItem("matizTariffs")
+  ) || defaultTariffs;
 
 
-/* =========================
-   CONFIGURACIÓN
-========================= */
-
-function cargarConfiguracion() {
-
-  const guardado =
-    localStorage.getItem("configuracion");
-
-  if (guardado) {
-
-    configuracion =
-      JSON.parse(guardado);
-
-  }
-
-}
+let lastCalculation = null;
 
 
-function abrirConfiguracion() {
+/* =========================================================
+   ELEMENTOS
+   ========================================================= */
 
-  document
-    .getElementById("configuracion")
-    .classList.remove("oculto");
+const $ = id =>
+  document.getElementById(id);
 
-  document.getElementById("kmLitro").value =
-    configuracion.kmLitro;
 
-  document.getElementById("precioGasolina").value =
-    configuracion.precioGasolina;
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
 
-  document.getElementById("costoDesgaste").value =
-    configuracion.costoDesgaste;
+function number(id) {
 
-  document.getElementById("metaHora").value =
-    configuracion.metaHora;
-
-  document.getElementById("apiKey").value =
-    configuracion.apiKey;
+  return parseFloat($(id).value) || 0;
 
 }
 
 
-function cerrarConfiguracion() {
+function money(value) {
 
-  document
-    .getElementById("configuracion")
-    .classList.add("oculto");
-
-}
-
-
-function guardarConfiguracion() {
-
-  configuracion.kmLitro =
-    Number(document.getElementById("kmLitro").value);
-
-  configuracion.precioGasolina =
-    Number(document.getElementById("precioGasolina").value);
-
-  configuracion.costoDesgaste =
-    Number(document.getElementById("costoDesgaste").value);
-
-  configuracion.metaHora =
-    Number(document.getElementById("metaHora").value);
-
-  configuracion.apiKey =
-    document.getElementById("apiKey").value.trim();
-
-  localStorage.setItem(
-    "configuracion",
-    JSON.stringify(configuracion)
-  );
-
-  cerrarConfiguracion();
+  return "$" +
+    value.toLocaleString("es-MX", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
 }
 
 
-/* =========================
-   GOOGLE MAPS
-========================= */
+function round(value, decimals = 2) {
 
-async function cargarGoogleMaps() {
+  const factor =
+    Math.pow(10, decimals);
 
-  if (!configuracion.apiKey) {
+  return Math.round(value * factor) / factor;
 
-    throw new Error(
-      "Primero agrega tu Google Maps API Key en ⚙️"
+}
+
+
+/* =========================================================
+   PARSEAR COORDENADAS
+   ========================================================= */
+
+function parseCoordinateString(text) {
+
+  if (!text) return null;
+
+  const clean =
+    text
+      .trim()
+      .replace(/\s+/g, " ");
+
+  /*
+    Formatos:
+
+    22.156,-100.985
+    22.156 -100.985
+  */
+
+  const match =
+    clean.match(
+      /^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/
     );
 
+  if (!match) return null;
+
+  const lat = parseFloat(match[1]);
+  const lon = parseFloat(match[2]);
+
+  if (
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180
+  ) {
+    return null;
   }
 
-
-  if (window.google &&
-      window.google.maps) {
-
-    return;
-
-  }
-
-
-  return new Promise(
-    (resolve,reject)=>{
-
-      const script =
-        document.createElement("script");
-
-      script.src =
-        "https://maps.googleapis.com/maps/api/js?key="
-        + encodeURIComponent(configuracion.apiKey);
-
-      script.async = true;
-
-      script.defer = true;
-
-      script.onload = resolve;
-
-      script.onerror = () =>
-        reject(
-          new Error(
-            "No se pudo cargar Google Maps. Revisa tu API Key."
-          )
-        );
-
-      document.head.appendChild(script);
-
-    }
-  );
+  return {
+    lat,
+    lon
+  };
 
 }
 
 
-/* =========================
-   CALCULAR RUTA
-========================= */
+/* =========================================================
+   EXTRAER COORDENADAS DE URL
+   ========================================================= */
 
-async function calcularRuta() {
+function extractCoordinates(urlText) {
 
-  const origen =
-    document.getElementById("origen").value.trim();
+  if (!urlText) return [];
 
-  const destino =
-    document.getElementById("destino").value.trim();
+  const coords = [];
 
-  const pago =
-    Number(document.getElementById("pago").value);
+  function add(lat, lon) {
 
-  const plataforma =
-    document.getElementById("plataforma").value;
+    lat = Number(lat);
+    lon = Number(lon);
 
+    if (
+      Number.isFinite(lat) &&
+      Number.isFinite(lon) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lon >= -180 &&
+      lon <= 180
+    ) {
 
-  if (!origen ||
-      !destino ||
-      pago <= 0) {
+      const exists =
+        coords.some(
+          c =>
+            Math.abs(c.lat - lat) < 0.000001 &&
+            Math.abs(c.lon - lon) < 0.000001
+        );
 
-    document.getElementById("mensaje")
-      .textContent =
-      "Completa origen, destino y pago.";
+      if (!exists) {
+        coords.push({ lat, lon });
+      }
 
-    return;
+    }
 
   }
 
 
-  document.getElementById("mensaje")
-    .textContent =
-    "Consultando Google Maps...";
+  /*
+    @22.123,-100.123
+  */
 
+  let match;
+
+  const atRegex =
+    /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g;
+
+  while ((match = atRegex.exec(urlText))) {
+
+    add(match[1], match[2]);
+
+  }
+
+
+  /*
+    !3d22.123!4d-100.123
+  */
+
+  const googleRegex =
+    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/g;
+
+  while ((match = googleRegex.exec(urlText))) {
+
+    add(match[1], match[2]);
+
+  }
+
+
+  /*
+    Coordenadas separadas por coma.
+  */
+
+  const pairRegex =
+    /(-?\d{1,3}\.\d{4,})\s*[,;]\s*(-?\d{1,3}\.\d{4,})/g;
+
+  while ((match = pairRegex.exec(urlText))) {
+
+    const a = Number(match[1]);
+    const b = Number(match[2]);
+
+    /*
+      Google normalmente usa lat,lon.
+    */
+
+    if (
+      Math.abs(a) <= 90 &&
+      Math.abs(b) <= 180
+    ) {
+
+      add(a, b);
+
+    }
+
+  }
+
+
+  return coords;
+
+}
+
+
+/* =========================================================
+   EXTRAER ORIGIN / DESTINATION DE GOOGLE MAPS
+   ========================================================= */
+
+function extractGoogleParams(urlText) {
 
   try {
 
-    await cargarGoogleMaps();
+    const url =
+      new URL(urlText);
+
+    const params =
+      url.searchParams;
+
+    const result = {
+      origin: null,
+      destination: null,
+      waypoints: []
+    };
 
 
-    const servicio =
-      new google.maps.DirectionsService();
+    if (params.get("origin")) {
+
+      result.origin =
+        decodeURIComponent(
+          params.get("origin")
+        );
+
+    }
 
 
-    servicio.route(
+    if (params.get("destination")) {
 
-      {
+      result.destination =
+        decodeURIComponent(
+          params.get("destination")
+        );
 
-        origin: origen,
+    }
 
-        destination: destino,
 
-        travelMode:
-          google.maps.TravelMode.DRIVING,
+    if (params.get("waypoints")) {
 
-        drivingOptions: {
+      result.waypoints =
+        params
+          .get("waypoints")
+          .split("|")
+          .map(x => decodeURIComponent(x));
 
-          departureTime:
-            new Date(),
+    }
 
-          trafficModel:
-            google.maps.TrafficModel.BEST_GUESS
 
-        }
+    return result;
 
-      },
+  } catch {
 
-      function(resultado, estado) {
+    return null;
 
-        if (estado !== "OK") {
+  }
 
-          document.getElementById("mensaje")
-            .textContent =
-            "Google Maps no encontró la ruta.";
+}
+
+
+/* =========================================================
+   RUTA OSRM
+   ========================================================= */
+
+async function calculateOSRM(coords) {
+
+  if (!coords || coords.length < 2) {
+
+    throw new Error(
+      "Se necesitan al menos origen y destino."
+    );
+
+  }
+
+
+  const coordinateString =
+    coords
+      .map(c => `${c.lon},${c.lat}`)
+      .join(";");
+
+
+  const url =
+    `${OSRM_URL}/${coordinateString}?overview=false`;
+
+
+  const response =
+    await fetch(url);
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      "El servidor de rutas no respondió."
+    );
+
+  }
+
+
+  const data =
+    await response.json();
+
+
+  if (data.code !== "Ok") {
+
+    throw new Error(
+      data.message ||
+      "No se encontró una ruta."
+    );
+
+  }
+
+
+  if (!data.routes?.length) {
+
+    throw new Error(
+      "No se encontró una ruta."
+    );
+
+  }
+
+
+  return {
+
+    km:
+      data.routes[0].distance / 1000,
+
+    minutes:
+      data.routes[0].duration / 60
+
+  };
+
+}
+
+
+/* =========================================================
+   PROCESAR GOOGLE MAPS
+   ========================================================= */
+
+$("processMaps")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const url =
+        $("mapsUrl").value.trim();
+
+      if (!url) {
+
+        setStatus(
+          "Pega primero un enlace de Google Maps.",
+          true
+        );
+
+        return;
+
+      }
+
+
+      setStatus(
+        "🔎 Analizando enlace...",
+        false
+      );
+
+
+      /*
+        Primero intentamos sacar coordenadas.
+      */
+
+      let coords =
+        extractCoordinates(url);
+
+
+      /*
+        Después revisamos parámetros.
+      */
+
+      const params =
+        extractGoogleParams(url);
+
+
+      if (
+        coords.length >= 2
+      ) {
+
+        try {
+
+          const route =
+            await calculateOSRM(coords);
+
+          $("km").value =
+            round(route.km, 2);
+
+          $("minutes").value =
+            Math.round(route.minutes);
+
+          setStatus(
+            `✅ Ruta encontrada: ${round(route.km,2)} km · ${Math.round(route.minutes)} min`,
+            false
+          );
 
           return;
 
+        } catch (error) {
+
+          console.error(error);
+
         }
 
-
-        const ruta =
-          resultado.routes[0];
-
-        const tramo =
-          ruta.legs[0];
+      }
 
 
-        const metros =
-          tramo.distance.value;
+      /*
+        Si el enlace tiene origin/destination
+        pero no coordenadas, mostramos instrucciones.
+      */
 
-        const segundos =
-          tramo.duration.value;
+      if (
+        params?.origin &&
+        params?.destination
+      ) {
 
+        $("origin").value =
+          params.origin;
 
-        const km =
-          metros / 1000;
-
-        const minutos =
-          segundos / 60;
-
-
-        /* GASOLINA */
-
-        const costoGasolina =
-          (km / configuracion.kmLitro)
-          *
-          configuracion.precioGasolina;
+        $("destination").value =
+          params.destination;
 
 
-        /* DESGASTE */
+        setStatus(
+          "📍 Encontré origen y destino. Para calcular automáticamente desde texto necesitas introducir coordenadas o usar el botón de ruta con coordenadas.",
+          true
+        );
 
-        const desgaste =
-          km *
-          configuracion.costoDesgaste;
+        return;
 
-
-        /* GANANCIA */
-
-        const ganancia =
-          pago -
-          costoGasolina -
-          desgaste;
+      }
 
 
-        /* GANANCIA POR HORA */
+      /*
+        Enlaces cortos de maps.app.goo.gl
+      */
 
-        const horas =
-          minutos / 60;
+      if (
+        url.includes("maps.app.goo.gl") ||
+        url.includes("goo.gl/maps")
+      ) {
 
+        setStatus(
+          "⚠️ Este es un enlace corto de Google Maps. GitHub Pages no puede resolverlo directamente de forma confiable. Usa el enlace completo de la ruta o introduce origen/destino como coordenadas.",
+          true
+        );
 
-        const gananciaHora =
-          ganancia / horas;
+        return;
 
-
-        /* GANANCIA POR KM */
-
-        const gananciaKm =
-          ganancia / km;
-
-
-        mostrarResultado({
-
-          origen,
-
-          destino,
-
-          plataforma,
-
-          pago,
-
-          km,
-
-          minutos,
-
-          costoGasolina,
-
-          desgaste,
-
-          ganancia,
-
-          gananciaHora,
-
-          gananciaKm
-
-        });
+      }
 
 
-        mostrarMapa(
-          ruta,
-          resultado
+      setStatus(
+        "❌ No pude obtener las coordenadas de esta URL.",
+        true
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   CALCULAR RUTA DESDE COORDENADAS
+   ========================================================= */
+
+$("routeButton")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const origin =
+        parseCoordinateString(
+          $("origin").value
+        );
+
+      const destination =
+        parseCoordinateString(
+          $("destination").value
         );
 
 
-        ultimoViaje = {
+      if (!origin || !destination) {
 
-          fecha:
-            new Date().toISOString(),
+        setStatus(
+          "Introduce las coordenadas como: 22.156,-100.985",
+          true
+        );
 
-          origen,
-
-          destino,
-
-          plataforma,
-
-          pago,
-
-          km,
-
-          minutos,
-
-          costoGasolina,
-
-          desgaste,
-
-          ganancia,
-
-          gananciaHora,
-
-          gananciaKm
-
-        };
+        return;
 
       }
 
-    );
 
-  }
+      setStatus(
+        "🚗 Calculando ruta...",
+        false
+      );
 
-  catch(error) {
 
-    document.getElementById("mensaje")
-      .textContent =
-      error.message;
+      try {
 
-  }
+        const route =
+          await calculateOSRM([
+            origin,
+            destination
+          ]);
+
+
+        $("km").value =
+          round(route.km, 2);
+
+        $("minutes").value =
+          Math.round(route.minutes);
+
+
+        setStatus(
+          `✅ ${round(route.km,2)} km · ${Math.round(route.minutes)} min`,
+          false
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        setStatus(
+          "❌ No fue posible calcular la ruta.",
+          true
+        );
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+
+function setStatus(text, error) {
+
+  const element =
+    $("routeStatus");
+
+  element.textContent =
+    text;
+
+  element.style.color =
+    error
+      ? "#ff5252"
+      : "#00e676";
 
 }
 
 
-/* =========================
-   MOSTRAR RESULTADO
-========================= */
+/* =========================================================
+   TARIFA ESTIMADA
+   ========================================================= */
 
-function mostrarResultado(viaje) {
+function estimatedPayment(
+  platform,
+  km,
+  minutes
+) {
 
-  document
-    .getElementById("resultado")
-    .classList.remove("oculto");
+  const tariff =
+    tariffs[platform];
 
-
-  document.getElementById("distancia")
-    .textContent =
-    viaje.km.toFixed(1)
-    + " km";
-
-
-  document.getElementById("tiempo")
-    .textContent =
-    Math.round(viaje.minutos)
-    + " min";
+  if (!tariff) return 0;
 
 
-  document.getElementById("gasolina")
-    .textContent =
-    dinero(viaje.costoGasolina);
+  return (
+    tariff.base +
+    km * tariff.km +
+    minutes * tariff.minute
+  );
+
+}
 
 
-  document.getElementById("desgaste")
-    .textContent =
-    dinero(viaje.desgaste);
+/* =========================================================
+   CALCULAR VIAJE
+   ========================================================= */
+
+$("calculate")
+  .addEventListener(
+    "click",
+    calculateTrip
+  );
 
 
-  document.getElementById("ganancia")
-    .textContent =
-    dinero(viaje.ganancia);
+function calculateTrip() {
+
+  const kmBase =
+    number("km");
+
+  const minutesBase =
+    number("minutes");
+
+  const extraKm =
+    number("extraKm");
+
+  const extraMinutes =
+    number("extraMinutes");
 
 
-  document.getElementById("porHora")
-    .textContent =
-    dinero(viaje.gananciaHora)
-    + "/h";
+  const km =
+    kmBase + extraKm;
+
+  const minutes =
+    minutesBase + extraMinutes;
 
 
-  document.getElementById("porKm")
-    .textContent =
-    dinero(viaje.gananciaKm)
-    + "/km";
-
-
-  const decision =
-    document.getElementById("decision");
-
-
-  decision.className =
-    "decision";
-
-
-  if (viaje.gananciaHora >=
-      configuracion.metaHora) {
-
-    decision.classList.add("verde");
-
-    decision.textContent =
-      "🟢 CONVIENE";
-
-  }
-
-  else if (
-    viaje.gananciaHora >=
-    configuracion.metaHora * .67
+  if (
+    km <= 0 ||
+    minutes <= 0
   ) {
 
-    decision.classList.add("amarillo");
-
-    decision.textContent =
-      "🟡 REGULAR";
-
-  }
-
-  else {
-
-    decision.classList.add("rojo");
-
-    decision.textContent =
-      "🔴 NO CONVIENE";
-
-  }
-
-}
-
-
-/* =========================
-   MAPA
-========================= */
-
-function mostrarMapa(ruta, resultado) {
-
-  document
-    .getElementById("mapaContainer")
-    .classList.remove("oculto");
-
-
-  const mapa =
-    new google.maps.Map(
-
-      document.getElementById("mapa"),
-
-      {
-
-        zoom: 13,
-
-        center:
-          ruta.overview_path[0]
-
-      }
-
+    alert(
+      "Primero introduce los kilómetros y el tiempo."
     );
-
-
-  const directionsRenderer =
-    new google.maps.DirectionsRenderer({
-
-      map: mapa,
-
-      directions: resultado
-
-    });
-
-}
-
-
-/* =========================
-   GUARDAR VIAJE
-========================= */
-
-function guardarViaje() {
-
-  if (!ultimoViaje) {
 
     return;
 
   }
 
 
-  const viajes =
-    obtenerViajes();
+  const kmL =
+    number("kmL");
+
+  const gasPrice =
+    number("gasPrice");
+
+  const wearKm =
+    number("wearKm");
+
+  const targetHour =
+    number("targetHour");
 
 
-  viajes.unshift(
-    ultimoViaje
+  if (kmL <= 0) {
+
+    alert(
+      "El rendimiento del vehículo debe ser mayor que 0."
+    );
+
+    return;
+
+  }
+
+
+  const platform =
+    $("platform").value;
+
+
+  const estimated =
+    estimatedPayment(
+      platform,
+      km,
+      minutes
+    );
+
+
+  const realOffer =
+    number("realOffer");
+
+
+  const usingRealOffer =
+    realOffer > 0;
+
+
+  const payment =
+    usingRealOffer
+      ? realOffer
+      : estimated;
+
+
+  const fuel =
+    (km / kmL) *
+    gasPrice;
+
+
+  const wear =
+    km *
+    wearKm;
+
+
+  const totalCost =
+    fuel + wear;
+
+
+  const net =
+    payment - totalCost;
+
+
+  const hours =
+    minutes / 60;
+
+
+  const netHour =
+    hours > 0
+      ? net / hours
+      : 0;
+
+
+  const netKm =
+    km > 0
+      ? net / km
+      : 0;
+
+
+  /*
+    Pago mínimo necesario:
+
+    costos + objetivo por hora
+  */
+
+  const minimum =
+    totalCost +
+    targetHour * hours;
+
+
+  let decision =
+    "RECHAZAR";
+
+  let className =
+    "reject";
+
+
+  /*
+    Aceptar:
+    supera el objetivo horario
+
+    Depende:
+    cubre costos pero no alcanza objetivo
+
+    Rechazar:
+    ni siquiera cubre costos
+  */
+
+  if (
+    payment >= minimum
+  ) {
+
+    decision =
+      "ACEPTAR";
+
+    className =
+      "accept";
+
+  } else if (
+    payment > totalCost
+  ) {
+
+    decision =
+      "DEPENDE";
+
+    className =
+      "depends";
+
+  }
+
+
+  $("decision").textContent =
+    decision;
+
+  $("decision").className =
+    `decision ${className}`;
+
+
+  $("rKm").textContent =
+    `${round(km,2)} km`;
+
+  $("rTime").textContent =
+    `${Math.round(minutes)} min`;
+
+  $("rEstimated").textContent =
+    money(estimated);
+
+  $("rPayment").textContent =
+    money(payment);
+
+  $("rFuel").textContent =
+    money(fuel);
+
+  $("rWear").textContent =
+    money(wear);
+
+  $("rCost").textContent =
+    money(totalCost);
+
+  $("rNet").textContent =
+    money(net);
+
+  $("rKmProfit").textContent =
+    money(netKm);
+
+  $("rHourProfit").textContent =
+    money(netHour);
+
+  $("rMinimum").textContent =
+    money(minimum);
+
+
+  lastCalculation = {
+
+    date:
+      new Date().toLocaleString(
+        "es-MX"
+      ),
+
+    platform:
+      tariffs[platform].name,
+
+    km,
+
+    minutes,
+
+    estimated,
+
+    payment,
+
+    realOffer:
+      usingRealOffer,
+
+    fuel,
+
+    wear,
+
+    cost:
+      totalCost,
+
+    net,
+
+    netKm,
+
+    netHour,
+
+    minimum,
+
+    decision
+
+  };
+
+}
+
+
+/* =========================================================
+   ABRIR GOOGLE MAPS
+   ========================================================= */
+
+$("openMaps")
+  .addEventListener(
+    "click",
+    () => {
+
+      const origin =
+        $("origin").value.trim();
+
+      const destination =
+        $("destination").value.trim();
+
+
+      if (
+        !origin ||
+        !destination
+      ) {
+
+        alert(
+          "Introduce origen y destino primero."
+        );
+
+        return;
+
+      }
+
+
+      const url =
+        "https://www.google.com/maps/dir/?api=1" +
+        "&origin=" +
+        encodeURIComponent(origin) +
+        "&destination=" +
+        encodeURIComponent(destination) +
+        "&travelmode=driving";
+
+
+      window.open(
+        url,
+        "_blank"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   GUARDAR VIAJE
+   ========================================================= */
+
+$("saveTrip")
+  .addEventListener(
+    "click",
+    () => {
+
+      if (!lastCalculation) {
+
+        alert(
+          "Primero calcula el viaje."
+        );
+
+        return;
+
+      }
+
+
+      const history =
+        JSON.parse(
+          localStorage.getItem(
+            "matizHistory"
+          )
+        ) || [];
+
+
+      history.unshift(
+        lastCalculation
+      );
+
+
+      /*
+        Máximo 100 viajes
+      */
+
+      const limited =
+        history.slice(0, 100);
+
+
+      localStorage.setItem(
+        "matizHistory",
+        JSON.stringify(limited)
+      );
+
+
+      renderHistory();
+
+
+      alert(
+        "Viaje guardado."
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   HISTORIAL
+   ========================================================= */
+
+function renderHistory() {
+
+  const container =
+    $("history");
+
+
+  const history =
+    JSON.parse(
+      localStorage.getItem(
+        "matizHistory"
+      )
+    ) || [];
+
+
+  if (!history.length) {
+
+    container.innerHTML =
+      `<p class="muted">
+        Todavía no tienes viajes guardados.
+      </p>`;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    history
+      .map(
+        (trip, index) => {
+
+          const decisionClass =
+            trip.decision === "ACEPTAR"
+              ? "accept"
+              : trip.decision === "DEPENDE"
+                ? "depends"
+                : "reject";
+
+
+          return `
+
+            <div class="historyItem">
+
+              <div>
+                <strong>
+                  ${escapeHtml(trip.platform)}
+                </strong>
+
+                <span style="float:right">
+                  ${money(trip.net)}
+                </span>
+              </div>
+
+              <div class="muted">
+
+                ${round(trip.km,2)} km ·
+                ${Math.round(trip.minutes)} min ·
+                ${money(trip.payment)}
+
+              </div>
+
+              <div
+                style="margin-top:7px"
+                class="${decisionClass}"
+              >
+
+                ${trip.decision}
+
+              </div>
+
+              <div class="muted">
+
+                ${escapeHtml(trip.date)}
+
+              </div>
+
+              <button
+                onclick="deleteTrip(${index})"
+                class="danger"
+                style="margin-top:8px"
+              >
+                Eliminar
+              </button>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+function deleteTrip(index) {
+
+  const history =
+    JSON.parse(
+      localStorage.getItem(
+        "matizHistory"
+      )
+    ) || [];
+
+
+  history.splice(
+    index,
+    1
   );
 
 
   localStorage.setItem(
-    "viajes",
-    JSON.stringify(viajes)
+    "matizHistory",
+    JSON.stringify(history)
   );
 
 
-  actualizarResumen();
-
-
-  document.getElementById("mensaje")
-    .textContent =
-    "✅ Viaje guardado.";
+  renderHistory();
 
 }
 
 
-/* =========================
-   HISTORIAL
-========================= */
+$("clearHistory")
+  .addEventListener(
+    "click",
+    () => {
 
-function obtenerViajes() {
+      if (
+        !confirm(
+          "¿Borrar todo el historial?"
+        )
+      ) {
 
-  return JSON.parse(
-    localStorage.getItem("viajes")
-    || "[]"
-  );
+        return;
 
-}
-
-
-function actualizarResumen() {
-
-  const viajes =
-    obtenerViajes();
+      }
 
 
-  let ingresos = 0;
-
-  let gasolina = 0;
-
-  let desgaste = 0;
-
-  let ganancia = 0;
-
-  let horas = 0;
+      localStorage.removeItem(
+        "matizHistory"
+      );
 
 
-  viajes.forEach(
-    viaje => {
-
-      ingresos += viaje.pago;
-
-      gasolina += viaje.costoGasolina;
-
-      desgaste += viaje.desgaste;
-
-      ganancia += viaje.ganancia;
-
-      horas +=
-        viaje.minutos / 60;
+      renderHistory();
 
     }
   );
 
 
-  document.getElementById("totalViajes")
-    .textContent =
-    viajes.length;
+/* =========================================================
+   ESCAPAR HTML
+   ========================================================= */
 
+function escapeHtml(value) {
 
-  document.getElementById("totalIngresos")
-    .textContent =
-    dinero(ingresos);
+  return String(value)
 
+    .replaceAll("&", "&amp;")
 
-  document.getElementById("totalGasolina")
-    .textContent =
-    dinero(gasolina);
+    .replaceAll("<", "&lt;")
 
+    .replaceAll(">", "&gt;")
 
-  document.getElementById("totalDesgaste")
-    .textContent =
-    dinero(desgaste);
+    .replaceAll('"', "&quot;")
 
-
-  document.getElementById("totalGanancia")
-    .textContent =
-    dinero(ganancia);
-
-
-  document.getElementById("totalHora")
-    .textContent =
-    horas > 0
-      ? dinero(ganancia / horas)
-      : "$0";
-
-
-  mostrarHistorial(viajes);
+    .replaceAll("'", "&#039;");
 
 }
 
 
-function mostrarHistorial(viajes) {
+/* =========================================================
+   TARIFAS EDITABLES
+   ========================================================= */
 
-  const contenedor =
-    document.getElementById("historial");
+function renderTariffs() {
 
-
-  contenedor.innerHTML = "";
-
-
-  viajes.slice(0,30)
-    .forEach(viaje => {
-
-      const div =
-        document.createElement("div");
-
-      div.className =
-        "historial";
+  const container =
+    $("tariffs");
 
 
-      div.innerHTML = `
+  container.innerHTML =
+    Object.entries(tariffs)
+      .map(
+        ([key, tariff]) => {
 
-        <small>
-          ${new Date(viaje.fecha)
-            .toLocaleString("es-MX")}
-          ·
-          ${viaje.plataforma}
-        </small>
+          return `
 
-        <br>
+            <div class="tariff">
 
-        <strong>
-          ${viaje.origen}
-          →
-          ${viaje.destino}
-        </strong>
+              <h3>
+                ${escapeHtml(tariff.name)}
+              </h3>
 
-        <br>
+              <div class="tariffGrid">
 
-        ${viaje.km.toFixed(1)} km
+                <label>
 
-        ·
+                  Base
 
-        ${Math.round(viaje.minutos)} min
+                  <input
+                    type="number"
+                    step="0.01"
+                    value="${tariff.base}"
+                    data-tariff="${key}"
+                    data-field="base"
+                  >
 
-        ·
-
-        Neto:
-
-        ${dinero(viaje.ganancia)}
-
-        ·
-
-        ${dinero(viaje.gananciaHora)}/h
-
-      `;
+                </label>
 
 
-      contenedor.appendChild(div);
+                <label>
 
-    });
+                  $ / km
 
-}
+                  <input
+                    type="number"
+                    step="0.01"
+                    value="${tariff.km}"
+                    data-tariff="${key}"
+                    data-field="km"
+                  >
+
+                </label>
 
 
-/* =========================
-   BORRAR
-========================= */
+                <label>
 
-function borrarHistorial() {
+                  $ / minuto
 
-  if (
-    confirm(
-      "¿Seguro que quieres borrar todos los viajes?"
+                  <input
+                    type="number"
+                    step="0.01"
+                    value="${tariff.minute}"
+                    data-tariff="${key}"
+                    data-field="minute"
+                  >
+
+                </label>
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+
+  container
+    .querySelectorAll(
+      "input[data-tariff]"
     )
-  ) {
+    .forEach(
+      input => {
 
-    localStorage.removeItem(
-      "viajes"
+        input.addEventListener(
+          "change",
+          () => {
+
+            const key =
+              input.dataset.tariff;
+
+            const field =
+              input.dataset.field;
+
+
+            tariffs[key][field] =
+              parseFloat(input.value) || 0;
+
+
+            localStorage.setItem(
+              "matizTariffs",
+              JSON.stringify(tariffs)
+            );
+
+          }
+        );
+
+      }
     );
 
-    actualizarResumen();
-
-  }
-
 }
 
 
-/* =========================
-   DINERO
-========================= */
+/* =========================================================
+   MODO OSCURO / CLARO
+   ========================================================= */
 
-function dinero(numero) {
+$("themeBtn")
+  .addEventListener(
+    "click",
+    () => {
 
-  return new Intl.NumberFormat(
-    "es-MX",
-    {
+      document.body.classList.toggle(
+        "light"
+      );
 
-      style: "currency",
 
-      currency: "MXN"
+      const light =
+        document.body.classList.contains(
+          "light"
+        );
+
+
+      $("themeBtn").textContent =
+        light
+          ? "🌙"
+          : "☀️";
 
     }
-
-  ).format(numero || 0);
-
-}
+  );
 
 
-/* =========================
-   INICIO
-========================= */
+/* =========================================================
+   INICIALIZAR
+   ========================================================= */
 
-cargarConfiguracion();
+renderTariffs();
 
-actualizarResumen();
+renderHistory();
