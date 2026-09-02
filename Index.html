@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>RutaRentable SLP</title>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header>
+  <div>
+    <h1>RutaRentable</h1>
+    <p>Calculadora para repartidores · SLP</p>
+  </div>
+
+  <button onclick="abrirConfiguracion()">⚙️</button>
+</header>
+
+
+<main>
+
+<section class="card">
+
+  <h2>🚗 Nuevo viaje</h2>
+
+  <label>
+    Origen
+    <input id="origen" placeholder="Ej. Plaza Sendero SLP">
+  </label>
+
+  <label>
+    Destino
+    <input id="destino" placeholder="Ej. Centro Histórico SLP">
+  </label>
+
+  <label>
+    Plataforma
+    <select id="plataforma">
+      <option>Uber Eats</option>
+      <option>Uber Paquetería</option>
+      <option>DiDi Food</option>
+      <option>Rappi</option>
+      <option>Otra</option>
+    </select>
+  </label>
+
+  <label>
+    Pago ofrecido
+    <input id="pago" type="number" placeholder="Ej. 95">
+  </label>
+
+  <button class="principal" onclick="calcularRuta()">
+    📍 CALCULAR VIAJE
+  </button>
+
+  <p id="mensaje"></p>
+
+</section>
+
+
+<section id="resultado" class="card oculto">
+
+  <h2>📊 Resultado</h2>
+
+  <div id="decision" class="decision"></div>
+
+  <div class="datos">
+
+    <div>
+      <small>Distancia</small>
+      <strong id="distancia">-</strong>
+    </div>
+
+    <div>
+      <small>Tiempo</small>
+      <strong id="tiempo">-</strong>
+    </div>
+
+    <div>
+      <small>Gasolina</small>
+      <strong id="gasolina">-</strong>
+    </div>
+
+    <div>
+      <small>Desgaste</small>
+      <strong id="desgaste">-</strong>
+    </div>
+
+    <div>
+      <small>Ganancia neta</small>
+      <strong id="ganancia">-</strong>
+    </div>
+
+    <div>
+      <small>Ganancia por hora</small>
+      <strong id="porHora">-</strong>
+    </div>
+
+    <div>
+      <small>Ganancia por km</small>
+      <strong id="porKm">-</strong>
+    </div>
+
+  </div>
+
+  <button class="secundario" onclick="guardarViaje()">
+    💾 GUARDAR VIAJE
+  </button>
+
+</section>
+
+
+<section class="card">
+
+  <h2>📈 Resumen</h2>
+
+  <div class="datos">
+
+    <div>
+      <small>Viajes</small>
+      <strong id="totalViajes">0</strong>
+    </div>
+
+    <div>
+      <small>Ingresos</small>
+      <strong id="totalIngresos">$0</strong>
+    </div>
+
+    <div>
+      <small>Gasolina</small>
+      <strong id="totalGasolina">$0</strong>
+    </div>
+
+    <div>
+      <small>Desgaste</small>
+      <strong id="totalDesgaste">$0</strong>
+    </div>
+
+    <div>
+      <small>Ganancia</small>
+      <strong id="totalGanancia">$0</strong>
+    </div>
+
+    <div>
+      <small>Ganancia/h</small>
+      <strong id="totalHora">$0</strong>
+    </div>
+
+  </div>
+
+  <div id="historial"></div>
+
+  <button class="borrar" onclick="borrarHistorial()">
+    🗑️ Borrar historial
+  </button>
+
+</section>
+
+
+<section id="mapaContainer" class="card oculto">
+
+  <h2>🗺️ Ruta</h2>
+
+  <div id="mapa"></div>
+
+</section>
+
+</main>
+
+
+<!-- CONFIGURACIÓN -->
+
+<div id="configuracion" class="modal oculto">
+
+  <div class="modalContenido">
+
+    <h2>⚙️ Configuración</h2>
+
+    <label>
+      Consumo del Matiz (km/L)
+      <input id="kmLitro" type="number">
+    </label>
+
+    <label>
+      Precio gasolina ($/L)
+      <input id="precioGasolina" type="number">
+    </label>
+
+    <label>
+      Desgaste y mantenimiento ($/km)
+      <input id="costoDesgaste" type="number">
+    </label>
+
+    <label>
+      Meta mínima $/hora
+      <input id="metaHora" type="number">
+    </label>
+
+    <label>
+      Google Maps API Key
+      <input id="apiKey" type="password">
+    </label>
+
+    <p class="aviso">
+      La API Key se guarda únicamente en este navegador.
+    </p>
+
+    <button class="principal" onclick="guardarConfiguracion()">
+      GUARDAR
+    </button>
+
+    <button class="secundario" onclick="cerrarConfiguracion()">
+      CANCELAR
+    </button>
+
+  </div>
+
+</div>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
